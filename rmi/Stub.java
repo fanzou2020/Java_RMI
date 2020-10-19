@@ -1,6 +1,7 @@
 package rmi;
 
 import java.net.*;
+import java.lang.reflect.Proxy;
 
 /** RMI stub factory.
 
@@ -106,6 +107,14 @@ public abstract class Stub
      */
     public static <T> T create(Class<T> c, InetSocketAddress address)
     {
-        throw new UnsupportedOperationException("not implemented");
+//        throw new UnsupportedOperationException("not implemented");
+        @SuppressWarnings("unchecked")
+        T proxy = (T) Proxy.newProxyInstance(
+                c.getClassLoader(),
+                new Class[] { c },
+                new DynamicProxyHandler<T>(address)
+        );
+
+        return proxy;
     }
 }
