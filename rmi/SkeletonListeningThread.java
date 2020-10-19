@@ -5,11 +5,11 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ListeningThread<T> extends Thread {
+public class SkeletonListeningThread<T> extends Thread {
     private final T server;
     private InetSocketAddress address;
 
-    public ListeningThread(T server, InetSocketAddress address) {
+    public SkeletonListeningThread(T server, InetSocketAddress address) {
         this.server = server;
         this.address = address;
     }
@@ -25,7 +25,7 @@ public class ListeningThread<T> extends Thread {
                 System.out.println("New connection from " + client.getRemoteSocketAddress());
 
                 // create a new thread to handle client's request
-                ExecutionThread<T> et = new ExecutionThread<T>(client, server);
+                SkeletonExecutionThread<T> et = new SkeletonExecutionThread<T>(client, server);
                 et.start();
 
             }

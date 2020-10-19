@@ -7,13 +7,13 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class ExecutionThread<T> extends Thread {
+public class SkeletonExecutionThread<T> extends Thread {
     private Socket client;
     private T server;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
 
-    public ExecutionThread(Socket client, T server) {
+    public SkeletonExecutionThread(Socket client, T server) {
         this.client = client;
         this.server = server;
     }

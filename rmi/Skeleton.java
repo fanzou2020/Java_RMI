@@ -1,7 +1,6 @@
 package rmi;
 
 import java.net.*;
-import java.util.Arrays;
 
 /** RMI skeleton
 
@@ -154,7 +153,7 @@ public class Skeleton<T>
     public synchronized void start() throws RMIException
     {
         // create a listening thread
-        Thread t = new ListeningThread<T>(server, address);
+        Thread t = new SkeletonListeningThread<T>(server, address);
         t.start();
     }
 
