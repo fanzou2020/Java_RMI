@@ -136,4 +136,10 @@ public class ThreadTest extends Test
             failure(new TestFailed("exception in service thread", e));
         }
     }
+
+    public static void main(String[] args) throws Exception{
+        ThreadTest test = new ThreadTest();
+        test.initialize();
+        test.perform();
+    }
 }

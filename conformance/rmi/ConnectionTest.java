@@ -64,8 +64,9 @@ public class ConnectionTest extends Test
             throw new TestFailed("unable to create stub", t);
         }
 
-        task("connecting to skeleton using stub made from that skeleton");
+//        task("connecting to skeleton using stub made from that skeleton");
 
+        // TODO: Failed in this part, cannot pass Exception correctly.
         testStub(stub_implicit);
 
         task();
@@ -79,7 +80,7 @@ public class ConnectionTest extends Test
             throw new TestFailed("unable to create stub", t);
         }
 
-        task("connecting to skeleton using stub given an explicit address");
+//        task("connecting to skeleton using stub given an explicit address");
 
         testStub(stub_explicit);
 
@@ -124,7 +125,7 @@ public class ConnectionTest extends Test
         }
         catch(TestFailed e) { throw e; }
         catch(FileNotFoundException e) { }
-        catch(Throwable t)
+        catch(Exception t)
         {
             throw new TestFailed("unexpected exception when using stub", t);
         }
@@ -156,5 +157,12 @@ public class ConnectionTest extends Test
         {
             failure(new TestFailed("exception in service thread", e));
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        ConnectionTest test = new ConnectionTest();
+        test.initialize();
+        Thread.sleep(1000);
+        test.perform();
     }
 }

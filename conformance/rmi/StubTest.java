@@ -117,6 +117,19 @@ public class StubTest extends Test
                                  "test server", t);
         }
 
+        // Create the Skeleton, and start listening thread
+        try {
+            TestInterface testServer = new TestServer();
+
+            skeleton = new Skeleton<TestInterface>(TestInterface.class, testServer, address);
+
+            skeleton.start();
+
+        } catch (Throwable t) {
+            throw new TestFailed("unable to create skeleton");
+        }
+
+        /*
         // Bind the listening socket.
         try
         {
@@ -131,6 +144,7 @@ public class StubTest extends Test
         // Start the listening thread. The thread will not be able to call wake
         // until this function calls wait.
         new Thread(new ConnectionCheckThread()).start();
+         */
 
         // Attempt to connect to the listening server.
         try
@@ -494,5 +508,12 @@ public class StubTest extends Test
                                        "for a connection", e));
             }
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        StubTest test = new StubTest();
+        test.initialize();  // passed
+        test.perform();
+
     }
 }

@@ -23,6 +23,7 @@ public class SkeletonExecutionThread<T> extends Thread {
         try {
             process();
         } catch (Exception e) {
+            System.err.println("Process IOStream error");
             e.printStackTrace();
         }
     }

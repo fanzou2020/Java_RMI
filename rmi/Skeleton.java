@@ -1,6 +1,11 @@
 package rmi;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Random;
 
 /** RMI skeleton
 
@@ -29,6 +34,8 @@ public class Skeleton<T>
     Class<T> c;
     T server;
     InetSocketAddress address;
+    SkeletonListeningThread<T> thread;
+    boolean started = false;
 
     /** Creates a <code>Skeleton</code> with no initial server address. The
         address will be determined by the system when <code>start</code> is
@@ -51,10 +58,25 @@ public class Skeleton<T>
      */
     public Skeleton(Class<T> c, T server)
     {
+        /* Ensure that null arguments throw NullPointerException */
         if (c == null || server == null)
             throw new NullPointerException("Arguments cannot be null");
-        // TODO: if c not implement Remote interface, throw Error
-        // if (c not implement Remote interface) throw new Error ();
+
+        /* Ensure class rejected, c can only be interface */
+        if (!c.isInterface())
+            throw new Error("Only interface is accepted");
+
+        /* Ensure non-Remote Interface rejected */
+        boolean flag = true;
+        Method[] methods = c.getDeclaredMethods();
+        for (Method method : methods) {
+            if (!Arrays.asList(method.getExceptionTypes()).contains(RMIException.class)) {
+                flag = false;
+                break;
+            }
+        }
+        if (!flag) throw new Error("Non-Remote Interface");
+
         this.c = c;
         this.server = server;
 
@@ -152,9 +174,17 @@ public class Skeleton<T>
      */
     public synchronized void start() throws RMIException
     {
+        // if address not given, generate a random port by system.
+        if (address == null) {
+            Random random = new Random();
+            int randomPort = 4000 + random.nextInt(5000);
+            address = new InetSocketAddress(randomPort);
+        }
+
         // create a listening thread
-        Thread t = new SkeletonListeningThread<T>(server, address);
-        t.start();
+        thread = new SkeletonListeningThread<T>(server, address);
+        thread.start();
+        started = true;
     }
 
     /** Stops the skeleton server, if it is already running.
@@ -166,8 +196,27 @@ public class Skeleton<T>
         <code>stopped</code> is called at that point. The server may then be
         restarted.
      */
-    public synchronized void stop()
-    {
-        throw new UnsupportedOperationException("not implemented");
+    public synchronized void stop() {
+        if (thread.isAlive()) {
+            thread.stopListening();
+        }
+        started = false;
+        System.out.println("Server stopped, port = " + address.getPort());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Skeleton<?> skeleton = (Skeleton<?>) o;
+        return Objects.equals(c, skeleton.c) &&
+                Objects.equals(server, skeleton.server) &&
+                Objects.equals(address, skeleton.address) &&
+                Objects.equals(thread, skeleton.thread);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(c, server, address, thread);
     }
 }

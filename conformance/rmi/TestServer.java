@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
     <p>
     This class is used in multiple tests.
  */
-class TestServer implements TestInterface
+public class TestServer implements TestInterface
 {
     /** The sleeping thread does not return until this becomes
         <code>false</code>. */
@@ -23,7 +23,7 @@ class TestServer implements TestInterface
         throws RMIException, FileNotFoundException
     {
         if(throw_exception)
-            throw new FileNotFoundException();
+            throw new FileNotFoundException("Expected exception");
         else
             return null;
     }
@@ -31,6 +31,7 @@ class TestServer implements TestInterface
     @Override
     public synchronized void rendezvous() throws RMIException
     {
+        System.out.println("in function rendezvous");
         // If wake is false, this thread should go to sleep. If it is true,
         // this thread should wake the sleeping thread.
         if(!wake)

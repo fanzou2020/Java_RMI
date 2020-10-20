@@ -1,7 +1,9 @@
 package rmi;
 
+import java.lang.reflect.Method;
 import java.net.*;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 
 /** RMI stub factory.
 
@@ -46,10 +48,27 @@ public abstract class Stub
                       <code>RMIException</code>, or if an object implementing
                       this interface cannot be dynamically created.
      */
-    public static <T> T create(Class<T> c, Skeleton<T> skeleton)
-        throws UnknownHostException
+    public static <T> T create(Class<T> c, Skeleton<T> skeleton) throws UnknownHostException
     {
-        throw new UnsupportedOperationException("not implemented");
+        /* Ensure that null arguments throw NullPointerException */
+        if (c == null ||  skeleton == null)
+            throw new NullPointerException("Arguments cannot be null");
+
+        /* Ensures that a stub cannot be created from a skeleton whose address has
+        not been determined. */
+        if (!skeleton.started || skeleton.address == null) {
+            throw new IllegalStateException("Server haven't started, or address undefined");
+        }
+
+        validate(c);
+
+        @SuppressWarnings("unchecked")
+        T proxy = (T) Proxy.newProxyInstance(
+                c.getClassLoader(),
+                new Class[] { c },
+                new DynamicProxyHandler<T>(skeleton)
+        );
+        return proxy;
     }
 
     /** Creates a stub, given a skeleton with an assigned address and a hostname
@@ -83,9 +102,14 @@ public abstract class Stub
                       this interface cannot be dynamically created.
      */
     public static <T> T create(Class<T> c, Skeleton<T> skeleton,
-                               String hostname)
-    {
-        throw new UnsupportedOperationException("not implemented");
+                               String hostname) throws UnknownHostException {
+        /* Ensure that null arguments throw NullPointerException */
+        if (c == null ||  skeleton == null || hostname == null)
+            throw new NullPointerException("Arguments cannot be null");
+
+        /* override hostname */
+        skeleton.address = new InetSocketAddress(hostname, skeleton.address.getPort());
+        return create(c, skeleton);
     }
 
     /** Creates a stub, given the address of a remote server.
@@ -107,7 +131,12 @@ public abstract class Stub
      */
     public static <T> T create(Class<T> c, InetSocketAddress address)
     {
-//        throw new UnsupportedOperationException("not implemented");
+        /* Ensure that null arguments throw NullPointerException */
+        if (c == null || address == null)
+            throw new NullPointerException("Arguments cannot be null");
+
+        validate(c);
+
         @SuppressWarnings("unchecked")
         T proxy = (T) Proxy.newProxyInstance(
                 c.getClassLoader(),
@@ -116,5 +145,22 @@ public abstract class Stub
         );
 
         return proxy;
+    }
+
+    private static <T> void validate(Class<T> c) throws Error{
+        /* Ensure class rejected */
+        if (!c.isInterface()) throw new Error("c is not an interface");
+
+        /* Ensure non-Remote Interface rejected */
+        boolean flag = true;
+        Method[] methods = c.getDeclaredMethods();
+        for (Method method : methods) {
+            if (!Arrays.asList(method.getExceptionTypes()).contains(RMIException.class)) {
+                flag = false;
+                break;
+            }
+        }
+        if (!flag) throw new Error("Non-Remote Interface");
+
     }
 }

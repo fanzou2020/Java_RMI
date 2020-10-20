@@ -2,6 +2,8 @@ package conformance.rmi;
 
 import test.*;
 import rmi.*;
+
+import java.io.IOException;
 import java.net.*;
 
 /** Performs basic tests on the public interface of {@link rmi.Skeleton}.
@@ -72,6 +74,13 @@ public class SkeletonTest extends Test
         catch(RMIException e)
         {
             throw new TestFailed("unable to start skeleton", e);
+        }
+
+        // Sleep for 1 second, waiting for server to start.
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         if(!probe())
@@ -343,5 +352,13 @@ public class SkeletonTest extends Test
         {
             return argument;
         }
+    }
+
+    public static void main(String[] args) throws TestFailed {
+        SkeletonTest test = new SkeletonTest();
+        test.ensureNullPointerExceptions(); // passed
+        test.ensureClassRejected();  // passed
+        test.ensureNonRemoteInterfaceRejected(); // passed
+        test.ensureSkeletonRuns();  // passed
     }
 }
