@@ -66,10 +66,9 @@ public class ConnectionTest extends Test
 
 //        task("connecting to skeleton using stub made from that skeleton");
 
-        // TODO: Failed in this part, cannot pass Exception correctly.
         testStub(stub_implicit);
 
-        task();
+//        task();
 
         try
         {
@@ -84,7 +83,7 @@ public class ConnectionTest extends Test
 
         testStub(stub_explicit);
 
-        task();
+//        task();
     }
 
     /** Stops the skeleton server. */

@@ -4,8 +4,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Scanner;
 
 public class SkeletonExecutionThread<T> extends Thread {
     private Socket client;
@@ -37,12 +35,25 @@ public class SkeletonExecutionThread<T> extends Thread {
 
 
         // Execute method
+        Boolean hasException = false;
+        Throwable exception = null;
+        Object result = null;
         Method method = server.getClass().getMethod(methodName, argsTypes);
-        Object result = method.invoke(server, args);
+        try {
+            result = method.invoke(server, args);
+        } catch (InvocationTargetException e) {
+            hasException = true;
+            exception = e.getCause();
+        }
 
         // Write result to OutputStream
         oos = new ObjectOutputStream(client.getOutputStream());
-        oos.writeObject(result);
+        oos.writeObject(hasException);
+        if (hasException) {
+            oos.writeObject(exception);
+        } else {
+            oos.writeObject(result);
+        }
         oos.flush();
     }
 }

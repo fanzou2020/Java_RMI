@@ -22,9 +22,7 @@ public class DynamicProxyHandler<T> implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args)
-            throws InvocationTargetException, IllegalAccessException, IOException,
-            ClassNotFoundException, FileNotFoundException {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         Object result = null;
 
 //        /*************************** Local method **************************/
@@ -47,7 +45,13 @@ public class DynamicProxyHandler<T> implements InvocationHandler {
         /* if skeleton is given, call the method of skeleton,
            if not given, connect to remote server */
         else {
-            if (skeleton != null) { return method.invoke(skeleton.server, args); }
+            if (skeleton != null) {
+                try {
+                    return method.invoke(skeleton.server, args);
+                } catch (InvocationTargetException e) {
+                    throw e.getCause();
+                }
+            }
 
             Socket client = new Socket(address.getAddress(), address.getPort());
 
@@ -61,7 +65,13 @@ public class DynamicProxyHandler<T> implements InvocationHandler {
 
             // Get result object from server
             ObjectInputStream fromServer = new ObjectInputStream(client.getInputStream());
-            result = fromServer.readObject();
+            Boolean hasException = (Boolean) fromServer.readObject();
+            if (hasException) {
+                Throwable e = (Throwable) fromServer.readObject();
+                throw e;
+            } else {
+                result = fromServer.readObject();
+            }
         }
 
         return result;
