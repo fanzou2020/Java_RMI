@@ -366,4 +366,10 @@ public class RegistrationTest extends NamingTest
             }
         }
     }
+
+    public static void main(String[] args) throws TestFailed {
+        RegistrationTest rt = new RegistrationTest();
+        rt.initialize();
+        rt.perform();
+    }
 }

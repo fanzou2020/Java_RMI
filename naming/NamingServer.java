@@ -140,6 +140,9 @@ public class NamingServer implements Service, Registration
     public Path[] register(Storage client_stub, Command command_stub,
                            Path[] files)
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (client_stub == null || command_stub == null || files == null)
+            throw new NullPointerException("Arguments cannot be null");
+
+        return null;
     }
 }
