@@ -1,6 +1,7 @@
 package naming;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 
 import rmi.*;
 import common.*;
@@ -31,6 +32,9 @@ import storage.*;
  */
 public class NamingServer implements Service, Registration
 {
+    private Skeleton<Service> serviceSkeleton;
+    private Skeleton<Registration> registrationSkeleton;
+
     /** Creates the naming server object.
 
         <p>
@@ -38,7 +42,14 @@ public class NamingServer implements Service, Registration
      */
     public NamingServer()
     {
-        throw new UnsupportedOperationException("not implemented");
+        serviceSkeleton = new Skeleton<>(Service.class,
+                this,
+                new InetSocketAddress(NamingStubs.SERVICE_PORT)
+        );
+        registrationSkeleton = new Skeleton<>(Registration.class,
+                this,
+                new InetSocketAddress(NamingStubs.REGISTRATION_PORT)
+        );
     }
 
     /** Starts the naming server.
@@ -54,7 +65,8 @@ public class NamingServer implements Service, Registration
      */
     public synchronized void start() throws RMIException
     {
-        throw new UnsupportedOperationException("not implemented");
+        registrationSkeleton.start();
+        serviceSkeleton.start();
     }
 
     /** Stops the naming server.
@@ -68,7 +80,8 @@ public class NamingServer implements Service, Registration
      */
     public void stop()
     {
-        throw new UnsupportedOperationException("not implemented");
+        registrationSkeleton.stop();
+        serviceSkeleton.stop();
     }
 
     /** Indicates that the server has completely shut down.

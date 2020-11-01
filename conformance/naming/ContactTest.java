@@ -67,4 +67,10 @@ public class ContactTest extends NamingTest
         }
         catch(IOException e) { }
     }
+
+    public static void main(String[] args) throws TestFailed {
+        ContactTest contactTest = new ContactTest();
+        contactTest.initialize();
+        contactTest.perform();
+    }
 }
