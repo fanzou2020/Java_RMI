@@ -16,7 +16,7 @@ import rmi.RMIException;
     passed <code>null</code> for arguments or {@link SecurityException} if the
     security manager on the server does not allow an operation.
  */
-public interface Command extends Serializable
+public interface Command
 {
     /** Creates a file on the storage server.
 

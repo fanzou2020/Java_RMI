@@ -15,12 +15,26 @@ public class PathNode {
     private HashSet<ServerStubs> replicaStubs;
     private HashMap<String, PathNode> childNodes;
 
+    /**
+     * Constructor of PathNode of a file, given ServerStubs of the file, and it's Path
+     * @param nodePath Path of a file
+     * @param serverStubs The file's corresponding ServerStubs
+     */
     public PathNode(Path nodePath, ServerStubs serverStubs) {
         this.nodePath = nodePath;
         this.accessTime = 0;
         this.serverStubs = serverStubs;
         this.replicaStubs = new HashSet<>();
         this.childNodes = new HashMap<>();
+    }
+
+
+    /**
+     * Constructor of PathNode of a directory, given the path of this directory
+     * @param nodePath Path of a directory
+     */
+    public PathNode(Path nodePath) {
+        this(nodePath, null);
     }
 
     /**
@@ -39,7 +53,7 @@ public class PathNode {
      * Getter of storage server stubs
      * @return ServerStubs
      */
-    public ServerStubs getSubs() { return serverStubs; }
+    public ServerStubs getStubs() { return serverStubs; }
 
     /**
      * Setter of storage server stubs

@@ -2,6 +2,7 @@ package naming;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.util.*;
 
 import rmi.*;
 import common.*;
@@ -34,6 +35,9 @@ public class NamingServer implements Service, Registration
 {
     private Skeleton<Service> serviceSkeleton;
     private Skeleton<Registration> registrationSkeleton;
+    private PathNode root;   // Root PathNode of of directory tree
+
+    private Set<ServerStubs> registeredStubs;
 
     /** Creates the naming server object.
 
@@ -42,6 +46,7 @@ public class NamingServer implements Service, Registration
      */
     public NamingServer()
     {
+        // Create skeletons for Service Interface and Registration Interface
         serviceSkeleton = new Skeleton<>(Service.class,
                 this,
                 new InetSocketAddress(NamingStubs.SERVICE_PORT)
@@ -50,6 +55,12 @@ public class NamingServer implements Service, Registration
                 this,
                 new InetSocketAddress(NamingStubs.REGISTRATION_PORT)
         );
+
+        registeredStubs = new HashSet<>();
+
+        // Create root PathNode
+        root = new PathNode(new Path());
+
     }
 
     /** Starts the naming server.
@@ -143,6 +154,45 @@ public class NamingServer implements Service, Registration
         if (client_stub == null || command_stub == null || files == null)
             throw new NullPointerException("Arguments cannot be null");
 
-        return null;
+        ServerStubs serverStubs = new ServerStubs(client_stub, command_stub);
+        if (registeredStubs.contains(serverStubs))
+            throw new IllegalStateException("Storage server already registered");
+
+        registeredStubs.add(serverStubs);
+
+        List<Path> filesToDeleted = new ArrayList<>();
+
+        // For each Path of a file, add it to directory tree
+        for (Path filePath : files) {
+            if (filePath.isRoot()) continue;
+
+            PathNode curNode = root;
+
+            for (String component : filePath) {
+                HashMap<String, PathNode> children = curNode.getChildren();
+                if (children.containsKey(component)) {
+                    // go the child
+                    curNode = children.get(component);
+                }
+                else {
+                    // add a new directory
+                    curNode.addChild(component, new PathNode(new Path(curNode.getPath(), component)));
+                    curNode = curNode.getChildren().get(component);
+                }
+            }
+
+            // Reach the end of path
+            if (curNode.getStubs() == null && curNode.getDescendants().size() == 0) {
+                // It has no descendant files, and no corresponding stubs
+                curNode.setStubs(serverStubs);
+
+            } else {
+                // File already exist in naming server, or shadows a directory
+                filesToDeleted.add(curNode.getPath());
+            }
+        }
+
+        return filesToDeleted.toArray(new Path[filesToDeleted.size()]);
+
     }
 }
