@@ -70,6 +70,9 @@ public class PathTest extends Test
             // List the files in the directory.
             File    file = directory.root();
             Path[]  listed = Path.list(file);
+            for (Path p : listed) {
+                System.out.println(p);
+            }
 
             // Check that the correct files have been listed.
             Path[]  expected = new Path[] {new Path("/file1"),
@@ -423,5 +426,10 @@ public class PathTest extends Test
         }
         catch(TestFailed e) { throw e; }
         catch(UnsupportedOperationException e) { }
+    }
+
+    public static void main(String[] args) throws TestFailed {
+        PathTest pt = new PathTest();
+        pt.perform();
     }
 }
