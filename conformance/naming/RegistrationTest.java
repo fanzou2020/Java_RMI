@@ -4,6 +4,9 @@ import test.*;
 import common.*;
 import storage.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 /** Tests the naming server <code>register</code> method.
 
     <p>

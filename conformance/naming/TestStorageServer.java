@@ -1,5 +1,6 @@
 package conformance.naming;
 
+import java.io.Serializable;
 import java.net.*;
 
 import test.*;
@@ -68,10 +69,12 @@ class TestStorageServer implements Storage, Command
         // Start the client interface skeleton and create the stub.
         client_skeleton.start();
         client_stub = Stub.create(Storage.class, client_skeleton);
+        System.out.println(client_stub instanceof Serializable);
 
         // Start the registration skeleton and create the stub.
         command_skeleton.start();
         command_stub = Stub.create(Command.class, command_skeleton);
+        System.out.println(command_stub instanceof Serializable);
 
         skeletons_started = true;
     }

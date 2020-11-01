@@ -2,25 +2,25 @@ package conformance.rmi;
 
 import test.*;
 import rmi.*;
+
+import java.io.FileNotFoundException;
 import java.net.*;
 
 /** Performs basic tests on the public interface of {@link rmi.Stub}.
-
-    <p>
-    These tests are best performed after <code>SkeletonTest</code>.
-
-    <p>
-    The tests performed are:
-    <ul>
-    <li>Stubs cannot be created for classes.</li>
-    <li>Stubs cannot be created for non-remote interfaces.</li>
-    <li>Stubs cannot be created with <code>null</code> arguments to
-        <code>Stub.create</code>.</li>
-    <li>Stubs connect to the address with which they are created.</li>
-    <li>Stubs correctly implement <code>equals</code> and
-        <code>hashCode</code>.</li>
-    <li>Stubs implement the <code>toString</code> method.</li>
-    </ul>
+ <p>
+ These tests are best performed after <code>SkeletonTest</code>.
+ <p>
+ The tests performed are:
+ <ul>
+ <li>Stubs cannot be created for classes.</li>
+ <li>Stubs cannot be created for non-remote interfaces.</li>
+ <li>Stubs cannot be created with <code>null</code> arguments to
+ <code>Stub.create</code>.</li>
+ <li>Stubs connect to the address with which they are created.</li>
+ <li>Stubs correctly implement <code>equals</code> and
+ <code>hashCode</code>.</li>
+ <li>Stubs implement the <code>toString</code> method.</li>
+ </ul>
  */
 public class StubTest extends Test
 {
@@ -28,7 +28,7 @@ public class StubTest extends Test
     public static final String  notice = "checking stub public interface";
     /** Prerequisites. */
     public static final Class[] prerequisites = new Class[]
-        {SkeletonTest.class};
+            {SkeletonTest.class};
 
     /** Socket address used for the creation of stubs. */
     private InetSocketAddress           address;
@@ -40,10 +40,9 @@ public class StubTest extends Test
     private boolean                     listening;
 
     /** Initializes the test.
-
-        <p>
-        This method creates the listening socket and dummy skeleton used in the
-        test.
+     <p>
+     This method creates the listening socket and dummy skeleton used in the
+     test.
      */
     @Override
     protected void initialize() throws TestFailed
@@ -99,12 +98,31 @@ public class StubTest extends Test
     }
 
     /** Checks that a stub connects to the server for which it was created.
-
-        @throws TestFailed If the stub does not connect.
+     @throws TestFailed If the stub does not connect.
      */
     private void ensureStubConnects() throws TestFailed
     {
         TestInterface   stub;
+
+        // Start the Skeleton on address
+        try {
+            TestServer server = new TestServer();
+
+            skeleton = new Skeleton<>(TestInterface.class, server, address);
+
+            skeleton.start();
+
+        } catch (RMIException e) {
+            e.printStackTrace();
+        }
+
+        // Sleep for 1 second waiting for Listening thread started
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
 
         // Create the stub.
         try
@@ -114,51 +132,37 @@ public class StubTest extends Test
         catch(Throwable t)
         {
             throw new TestFailed("unable to create stub for connecting to " +
-                                 "test server", t);
+                    "test server", t);
         }
 
-        // Create the Skeleton, and start listening thread
-        try {
-            TestInterface testServer = new TestServer();
-
-            skeleton = new Skeleton<TestInterface>(TestInterface.class, testServer, address);
-
-            skeleton.start();
-
-        } catch (Throwable t) {
-            throw new TestFailed("unable to create skeleton");
-        }
-
-        /*
-        // Bind the listening socket.
-        try
-        {
-            socket.bind(address);
-        }
-        catch(Exception e)
-        {
-            throw new TestFailed("unable to bind listening socket to " +
-                                 "address", e);
-        }
-
-        // Start the listening thread. The thread will not be able to call wake
-        // until this function calls wait.
-        new Thread(new ConnectionCheckThread()).start();
-         */
+//        // Bind the listening socket.
+//        try
+//        {
+//            socket.bind(address);
+//        }
+//        catch(Exception e)
+//        {
+//            throw new TestFailed("unable to bind listening socket to " +
+//                    "address", e);
+//        }
+//
+//        // Start the listening thread. The thread will not be able to call wake
+//        // until this function calls wait.
+//        new Thread(new ConnectionCheckThread()).start();
 
         // Attempt to connect to the listening server.
         try
         {
-            stub.method(false);
+            stub.method(true);
         }
-        catch(RMIException e)
+        catch(FileNotFoundException e)
         {
             return;
         }
         catch(Throwable t)
         {
             throw new TestFailed("exception when attempting to connect to " +
-                                 "server", t);
+                    "server", t);
         }
 
         throw new TestFailed("stub sent no data");
@@ -178,12 +182,10 @@ public class StubTest extends Test
     }
 
     /** Ensures that a stub cannot be created from a skeleton whose address has
-        not been determined.
-
-        <p>
-        This method should be used before the test skeleton is started.
-
-        @throws TestFailed If <code>IllegalStateException</code> is not thrown.
+     not been determined.
+     <p>
+     This method should be used before the test skeleton is started.
+     @throws TestFailed If <code>IllegalStateException</code> is not thrown.
      */
     private void ensureUnknownHostRejected() throws TestFailed
     {
@@ -191,24 +193,23 @@ public class StubTest extends Test
         {
             TestInterface   stub = Stub.create(TestInterface.class, skeleton);
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) allowed " +
-                                 "stub to be created from skeleton with " +
-                                 "unassigned address");
+                    "stub to be created from skeleton with " +
+                    "unassigned address");
         }
         catch(TestFailed e) { throw e; }
         catch(IllegalStateException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) threw " +
-                                 "an unexpected exception when given a " +
-                                 "skeleton with an unassigned address", t);
+                    "an unexpected exception when given a " +
+                    "skeleton with an unassigned address", t);
         }
     }
 
     /** Ensures that a <code>Stub</code> cannot be created from a class rather
-        than an interface.
-
-        @throws TestFailed If a <code>Stub</code> is created from a class, or if
-                           an unexpected exception occurs.
+     than an interface.
+     @throws TestFailed If a <code>Stub</code> is created from a class, or if
+     an unexpected exception occurs.
      */
     private void ensureClassRejected() throws TestFailed
     {
@@ -216,23 +217,22 @@ public class StubTest extends Test
         {
             Object          stub = Stub.create(Object.class, address);
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "has accepted a class");
+                    "has accepted a class");
         }
         catch(TestFailed e) { throw e; }
         catch(Error e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "constructor threw an unexpected exception " +
-                                 "when given a class", t);
+                    "constructor threw an unexpected exception " +
+                    "when given a class", t);
         }
     }
 
     /** Ensures that a <code>Stub</code> cannot be created from a non-remote
-        interface.
-
-        @throws TestFailed If a <code>Stub</code> is created from a non-remote
-                           interface, or if an unexpected exception occurs.
+     interface.
+     @throws TestFailed If a <code>Stub</code> is created from a non-remote
+     interface, or if an unexpected exception occurs.
      */
     private void ensureNonRemoteInterfaceRejected() throws TestFailed
     {
@@ -240,24 +240,23 @@ public class StubTest extends Test
         {
             BadInterface    stub = Stub.create(BadInterface.class, address);
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "has accepted a non-remote interface");
+                    "has accepted a non-remote interface");
         }
         catch(TestFailed e) { throw e; }
         catch(Error e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "constructor threw an unexpected exception " +
-                                 "when given a non-remote interface", t);
+                    "constructor threw an unexpected exception " +
+                    "when given a non-remote interface", t);
         }
     }
 
     /** Ensures that both <code>Stub.create</code> methods throw
-        <code>NullPointerException</code> when given <code>null</code> for any
-        parameters.
-
-        @throws TestFailed If <code>null</code> is given as a parameter but the
-                           correct exception is not thrown.
+     <code>NullPointerException</code> when given <code>null</code> for any
+     parameters.
+     @throws TestFailed If <code>null</code> is given as a parameter but the
+     correct exception is not thrown.
      */
     private void ensureNullPointerExceptions() throws TestFailed
     {
@@ -266,95 +265,95 @@ public class StubTest extends Test
         {
             TestInterface   stub = Stub.create(null, skeleton);
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) " +
-                                 "accepted null for first argument");
+                    "accepted null for first argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) threw " +
-                                 "an unexpected exception when given null " +
-                                 "for first argument", t);
+                    "an unexpected exception when given null " +
+                    "for first argument", t);
         }
 
         try
         {
             TestInterface   stub = Stub.create(null, skeleton, "127.0.0.1");
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "accepted null for first argument");
+                    "accepted null for first argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "thew an unexpected exception when given " +
-                                 "null for first argument", t);
+                    "thew an unexpected exception when given " +
+                    "null for first argument", t);
         }
 
         try
         {
             TestInterface   stub = Stub.create(null, address);
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "accepted null for first argument");
+                    "accepted null for first argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "threw an unexpected exception when given " +
-                                 "null for first argument", t);
+                    "threw an unexpected exception when given " +
+                    "null for first argument", t);
         }
 
         // Make sure that null for the second argument is rejected.
         try
         {
             TestInterface   stub =
-                Stub.create(TestInterface.class, (Skeleton<TestInterface>)null);
+                    Stub.create(TestInterface.class, (Skeleton<TestInterface>)null);
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) " +
-                                 "accepted null for second argument");
+                    "accepted null for second argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>) threw " +
-                                 "an unexpected exception when given null " +
-                                 "for second argument", t);
+                    "an unexpected exception when given null " +
+                    "for second argument", t);
         }
 
         try
         {
             TestInterface   stub =
-                Stub.create(TestInterface.class, (Skeleton<TestInterface>)null,
+                    Stub.create(TestInterface.class, (Skeleton<TestInterface>)null,
                             "127.0.0.1");
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "accepted null for second argument");
+                    "accepted null for second argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "threw an unexpected exception when given " +
-                                 "null for second argument", t);
+                    "threw an unexpected exception when given " +
+                    "null for second argument", t);
         }
 
         try
         {
             TestInterface   stub =
-                Stub.create(TestInterface.class, (InetSocketAddress)null);
+                    Stub.create(TestInterface.class, (InetSocketAddress)null);
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "accepted null for second argument");
+                    "accepted null for second argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, InetSocketAddress) " +
-                                 "threw an unexpected exception when given " +
-                                 "null for second argument", t);
+                    "threw an unexpected exception when given " +
+                    "null for second argument", t);
         }
 
         // Make sure that the three-argument form of create rejects null for the
@@ -362,24 +361,23 @@ public class StubTest extends Test
         try
         {
             TestInterface   stub =
-                Stub.create(TestInterface.class, skeleton, null);
+                    Stub.create(TestInterface.class, skeleton, null);
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "accepted null for third argument");
+                    "accepted null for third argument");
         }
         catch(TestFailed e) { throw e; }
         catch(NullPointerException e) { }
         catch(Throwable t)
         {
             throw new TestFailed("Stub.create(Class<T>, Skeleton<T>, String) " +
-                                 "threw an unexpected exception when given " +
-                                 "null for third argument", t);
+                    "threw an unexpected exception when given " +
+                    "null for third argument", t);
         }
     }
 
     /** Ensures that stubs for the same skeleton are equal and have the same
-        hash code, and stubs have a string representation.
-
-        @throws TestFailed If the test fails.
+     hash code, and stubs have a string representation.
+     @throws TestFailed If the test fails.
      */
     private void ensureLocalMethods() throws TestFailed
     {
@@ -402,7 +400,7 @@ public class StubTest extends Test
         // may automatically assign to the other skeletons (and therefore the
         // other two stubs).
         TestInterface   stub3 =
-            Stub.create(TestInterface.class, new InetSocketAddress(80));
+                Stub.create(TestInterface.class, new InetSocketAddress(80));
 
         // Check that stubs are not equal to null.
         try
@@ -414,7 +412,7 @@ public class StubTest extends Test
         catch(Throwable t)
         {
             throw new TestFailed("equals threw an unexpected exception when " +
-                                 "comparing a stub to null", t);
+                    "comparing a stub to null", t);
         }
 
         // Check that the first two stubs are equal.
@@ -423,14 +421,14 @@ public class StubTest extends Test
             if(!stub1.equals(stub2))
             {
                 throw new TestFailed("stubs for the same skeleton are not " +
-                                     "equal");
+                        "equal");
             }
         }
         catch(TestFailed e) { throw e; }
         catch(Throwable t)
         {
             throw new TestFailed("equals threw an unexpected exception when " +
-                                 "comparing equal stubs", t);
+                    "comparing equal stubs", t);
         }
 
         // Check that the first stub is different from the last.
@@ -443,7 +441,7 @@ public class StubTest extends Test
         catch(Throwable t)
         {
             throw new TestFailed("equals threw an unexpected exception when " +
-                                 "comparing unequal stubs", t);
+                    "comparing unequal stubs", t);
         }
 
         // Check that the first two stubs have the same hash code.
@@ -485,7 +483,7 @@ public class StubTest extends Test
     private class ConnectionCheckThread implements Runnable
     {
         /** Accepts one connection at the server socket, then closes the
-            connected socket. */
+         connected socket. */
         @Override
         public void run()
         {
@@ -505,11 +503,10 @@ public class StubTest extends Test
                 // because clean has already been called. If clean has already
                 // been called, this call to failure will have no effect.
                 failure(new TestFailed("caught an exception while listening " +
-                                       "for a connection", e));
+                        "for a connection", e));
             }
         }
     }
-
     public static void main(String[] args) throws Exception {
         StubTest test = new StubTest();
         test.initialize();  // passed

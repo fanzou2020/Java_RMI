@@ -4,59 +4,74 @@ import java.io.*;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Objects;
+
+import static java.lang.reflect.Proxy.isProxyClass;
 
 
-public class DynamicProxyHandler<T> implements InvocationHandler {
+public class DynamicProxyHandler<T> implements InvocationHandler, Serializable {
     private InetSocketAddress address;
-    private Skeleton<T> skeleton;
+    private Class<T> c;
 
-    public DynamicProxyHandler(InetSocketAddress address) {
+    public DynamicProxyHandler(Class<T> c, InetSocketAddress address) {
+        if (c == null || address == null) throw new NullPointerException("Arguments are null");
+
         this.address = address;
+        this.c = c;
+
     }
 
-    public DynamicProxyHandler(Skeleton<T> skeleton) {
-        this.skeleton = skeleton;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DynamicProxyHandler<?> that = (DynamicProxyHandler<?>) o;
+        return address.equals(that.address) &&
+                c.equals(that.c);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(address, c);
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        Object result = null;
+        Object result;
 
-//        /*************************** Local method **************************/
-        if (method.getName().equals("equals")) {
-            if (args[0] == null) { return false; }
-            if (skeleton != null) return skeleton.hashCode() == args[0].hashCode();
-            return address.hashCode() == args[0].hashCode();
+        /*************************** Local method **************************/
+        if (method.equals(Object.class.getMethod("equals", Object.class))) {
+            Object o = args[0];
+            if (o == null) return false;
+
+            if (!isProxyClass(args[0].getClass())) {
+                return false;
+            }
+
+            DynamicProxyHandler dph = (DynamicProxyHandler) Proxy.getInvocationHandler(o);
+            return c.equals(dph.c) && address.equals(dph.address);
         }
 
-        if (method.getName().equals("hashCode")) {
-            if (skeleton != null) return skeleton.hashCode();
-            return address.hashCode();
+        if (method.equals(Object.class.getMethod("hashCode"))) {
+            return (address.toString() + c.toString()).hashCode();
         }
 
-        if (method.getName().equals("toString")) {
-            return "toString() method";
+        if (method.equals(Object.class.getMethod("toString"))) {
+            return "Class: " + c + ", Address: " + address;
         }
 
         /************************* Remote method **************************/
-        /* if skeleton is given, call the method of skeleton,
-           if not given, connect to remote server */
-        else {
-            if (skeleton != null) {
-                try {
-                    return method.invoke(skeleton.server, args);
-                } catch (InvocationTargetException e) {
-                    throw e.getCause();
-                }
-            }
+        Socket client = new Socket(address.getAddress(), address.getPort());
+        ObjectOutputStream toServer = null;
+        ObjectInputStream fromServer = null;
 
-            Socket client = new Socket(address.getAddress(), address.getPort());
-
+        try {
             // serialize the method name, method argTypes, args and write them to ouputStream
-            ObjectOutputStream toServer = new ObjectOutputStream(client.getOutputStream());
+            toServer = new ObjectOutputStream(client.getOutputStream());
             Class<?>[] argsTypes = method.getParameterTypes();
             toServer.writeObject(method.getName());
             toServer.writeObject(argsTypes);
@@ -64,13 +79,21 @@ public class DynamicProxyHandler<T> implements InvocationHandler {
             toServer.flush();
 
             // Get result object from server
-            ObjectInputStream fromServer = new ObjectInputStream(client.getInputStream());
+            fromServer = new ObjectInputStream(client.getInputStream());
             Boolean hasException = (Boolean) fromServer.readObject();
             if (hasException) {
                 Throwable e = (Throwable) fromServer.readObject();
                 throw e;
             } else {
                 result = fromServer.readObject();
+            }
+        } finally {
+            try {
+                if (toServer != null) toServer.close();
+                if (fromServer != null) fromServer.close();
+                client.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 

@@ -174,17 +174,32 @@ public class Skeleton<T>
      */
     public synchronized void start() throws RMIException
     {
-        // if address not given, generate a random port by system.
-        if (address == null) {
-            Random random = new Random();
-            int randomPort = 4000 + random.nextInt(5000);
-            address = new InetSocketAddress(randomPort);
+        ServerSocket serverSocket;
+        if (thread != null && thread.isAlive() || started)
+            throw new RMIException("Listening thread already running.");
+
+        try {
+            if (address == null) {
+                // Computer assign randomly an available port
+                serverSocket = new ServerSocket(0);
+                address = new InetSocketAddress(serverSocket.getLocalPort());
+            }
+            else {
+                serverSocket = new ServerSocket(address.getPort());
+            }
+            System.out.println("Server created successfully, port = " + address.getPort());
+
+
+            // create a listening thread
+            thread = new SkeletonListeningThread<T>(server, serverSocket);
+            thread.start();
+            started = true;
+
+        } catch (IOException e) {
+            throw new RMIException("I/O exception, unable to create listening socket", e);
         }
 
-        // create a listening thread
-        thread = new SkeletonListeningThread<T>(server, address);
-        thread.start();
-        started = true;
+
     }
 
     /** Stops the skeleton server, if it is already running.

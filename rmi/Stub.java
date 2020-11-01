@@ -62,11 +62,15 @@ public abstract class Stub
 
         validate(c);
 
+        InetSocketAddress socketAddress = new InetSocketAddress(
+                skeleton.address.getHostName(), skeleton.address.getPort()
+        );
+
         @SuppressWarnings("unchecked")
         T proxy = (T) Proxy.newProxyInstance(
                 c.getClassLoader(),
                 new Class[] { c },
-                new DynamicProxyHandler<T>(skeleton)
+                new DynamicProxyHandler<T>(c, socketAddress)
         );
         return proxy;
     }
@@ -141,7 +145,7 @@ public abstract class Stub
         T proxy = (T) Proxy.newProxyInstance(
                 c.getClassLoader(),
                 new Class[] { c },
-                new DynamicProxyHandler<T>(address)
+                new DynamicProxyHandler<T>(c, address)
         );
 
         return proxy;
