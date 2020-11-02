@@ -112,13 +112,31 @@ public class NamingServer implements Service, Registration
     @Override
     public boolean isDirectory(Path path) throws FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (path == null) throw new NullPointerException("Argument is null");
+
+        if (path.isRoot()) return true;
+
+        PathNode dirNode = root.getNodeByPath(path);
+
+        return !dirNode.isFile();
+
     }
 
     @Override
     public String[] list(Path directory) throws FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (directory == null) throw new NullPointerException("Argument is null");
+
+        PathNode dirNode;
+
+        if (directory.isRoot()) dirNode = root;
+        else dirNode = root.getNodeByPath(directory);
+
+        if (dirNode.isFile()) throw new FileNotFoundException("Directory not found");
+
+        Set<String> listItems = dirNode.getChildren().keySet();
+        return listItems.toArray(new String[listItems.size()]);
+
     }
 
     @Override

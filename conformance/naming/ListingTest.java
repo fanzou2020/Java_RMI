@@ -265,4 +265,10 @@ public class ListingTest extends NamingTest
             storage_server = null;
         }
     }
+
+    public static void main(String[] args) throws TestFailed {
+        ListingTest lt = new ListingTest();
+        lt.initialize();
+        lt.perform();
+    }
 }
