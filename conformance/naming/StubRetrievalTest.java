@@ -2,6 +2,7 @@ package conformance.naming;
 
 import java.io.*;
 
+import rmi.Stub;
 import test.*;
 import common.*;
 import storage.*;
@@ -186,5 +187,11 @@ public class StubRetrievalTest extends NamingTest
             server2.stop();
             server2 = null;
         }
+    }
+
+    public static void main(String[] args) throws TestFailed {
+        StubRetrievalTest test = new StubRetrievalTest();
+        test.initialize();
+        test.perform();
     }
 }

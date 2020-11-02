@@ -193,7 +193,15 @@ public class NamingServer implements Service, Registration
     @Override
     public Storage getStorage(Path file) throws FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (file == null) throw new NullPointerException("Argument is null");
+        if (file.isRoot()) throw new FileNotFoundException();
+
+        PathNode fileNode = root.getNodeByPath(file);
+        if (fileNode.isFile()) {
+            return fileNode.getStubs().storageStub;
+        } else {
+            throw new FileNotFoundException("File does not exist");
+        }
     }
 
     // The method register is documented in Registration.java.
