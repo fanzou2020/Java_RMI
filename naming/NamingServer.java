@@ -2,6 +2,7 @@ package naming;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.*;
 
 import rmi.*;
@@ -37,7 +38,7 @@ public class NamingServer implements Service, Registration
     private Skeleton<Registration> registrationSkeleton;
     private PathNode root;   // Root PathNode of of directory tree
 
-    private Set<ServerStubs> registeredStubs;
+    private List<ServerStubs> registeredStubs;
 
     /** Creates the naming server object.
 
@@ -56,7 +57,7 @@ public class NamingServer implements Service, Registration
                 new InetSocketAddress(NamingStubs.REGISTRATION_PORT)
         );
 
-        registeredStubs = new HashSet<>();
+        registeredStubs = new ArrayList<>();
 
         // Create root PathNode
         root = new PathNode(new Path());
@@ -143,13 +144,44 @@ public class NamingServer implements Service, Registration
     public boolean createFile(Path file)
         throws RMIException, FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (file == null) throw new NullPointerException("Argument is null");
+
+        if (file.isRoot()) return false;
+
+        PathNode parentNode = root.getNodeByPath(file.parent());
+        if (parentNode.isFile()) throw new FileNotFoundException("Parent directory does not exist");
+
+        // Path of file already exist
+        if (parentNode.getChildren().containsKey(file.last())) return false;
+
+        // create file on naming server and Storage server
+        // choose a random Storage server, create file on this sotrage server
+        ServerStubs serverStubs = registeredStubs.get(new Random().nextInt(registeredStubs.size()));
+        serverStubs.commandStub.create(file);
+
+        // create file on naming serving
+        parentNode.addChild(file.last(), new PathNode(file, serverStubs));
+
+        return true;
     }
 
     @Override
     public boolean createDirectory(Path directory) throws FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (directory == null) throw new NullPointerException("Argument is null");
+
+        if (directory.isRoot()) return false;
+
+        PathNode parentNode = root.getNodeByPath(directory.parent());
+        if (parentNode.isFile()) throw new FileNotFoundException("Parent directory does not exist");
+
+        // Path of directory already exist
+        if (parentNode.getChildren().containsKey(directory.last())) return false;
+
+        // create a directory node in naming server
+        parentNode.addChild(directory.last(), new PathNode(directory));
+
+        return true;
     }
 
     @Override
@@ -175,8 +207,6 @@ public class NamingServer implements Service, Registration
         ServerStubs serverStubs = new ServerStubs(client_stub, command_stub);
         if (registeredStubs.contains(serverStubs))
             throw new IllegalStateException("Storage server already registered");
-
-        registeredStubs.add(serverStubs);
 
         List<Path> filesToDeleted = new ArrayList<>();
 
@@ -209,6 +239,8 @@ public class NamingServer implements Service, Registration
                 filesToDeleted.add(curNode.getPath());
             }
         }
+
+        registeredStubs.add(serverStubs);
 
         return filesToDeleted.toArray(new Path[filesToDeleted.size()]);
 

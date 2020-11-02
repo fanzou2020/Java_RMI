@@ -122,8 +122,8 @@ public class CreationTest extends NamingTest
         // request to create the file is not received by the storage server.
         // Typically, the file has already been created, as this is done
         // synchronously before createFile returns.
-        task("waiting for command to create " + file + " on the storage " +
-             "server");
+//        task("waiting for command to create " + file + " on the storage " +
+//             "server");
 
         synchronized(this)
         {
@@ -137,7 +137,7 @@ public class CreationTest extends NamingTest
             }
         }
 
-        task();
+//        task();
 
         // The storage server should not expect further requests to create a
         // file for now.
@@ -448,7 +448,7 @@ public class CreationTest extends NamingTest
         is expected, or the call is received with the wrong argument, the server
         fails the test.
      */
-    private class CreationTestStorageServer extends TestStorageServer
+    public class CreationTestStorageServer extends TestStorageServer
     {
         /** Creates the test storage server. */
         CreationTestStorageServer()
@@ -494,5 +494,11 @@ public class CreationTest extends NamingTest
 
             return false;
         }
+    }
+
+    public static void main(String[] args) throws TestFailed {
+        CreationTest ct = new CreationTest();
+        ct.initialize();
+        ct.perform();
     }
 }

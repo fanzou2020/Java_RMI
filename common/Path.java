@@ -177,7 +177,8 @@ public class Path implements Iterable<String>, Serializable {
             parentString.append("/");
             parentString.append(c);
         }
-        return new Path(parentString.toString());
+        if (parentString.toString().isEmpty()) return new Path();
+        else return new Path(parentString.toString());
     }
 
     /**
