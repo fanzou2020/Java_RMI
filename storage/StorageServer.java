@@ -139,21 +139,48 @@ public class StorageServer implements Storage, Command
     @Override
     public synchronized long size(Path file) throws FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (file == null) throw new NullPointerException("Argument is null");
+        File f = new File(rootString + file.toString());
+        if (!f.exists()) throw new FileNotFoundException("File does not exist");
+        if (f.isDirectory()) throw new FileNotFoundException("Try to get the size of a directory file");
+
+        return f.length();
     }
 
     @Override
     public synchronized byte[] read(Path file, long offset, int length)
         throws FileNotFoundException, IOException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (file == null) throw new NullPointerException("Argument is null");
+        File f = new File(rootString + file.toString());
+        if (!f.exists()) throw new FileNotFoundException("File does not exist");
+        if (f.isDirectory()) throw new FileNotFoundException("Try to read from a directory file");
+
+        if (offset < 0 || length < 0) throw new IndexOutOfBoundsException("Negative offset or length");
+        if (length + offset > f.length()) throw new IndexOutOfBoundsException("Read file out of bound");
+
+        RandomAccessFile randomAccessFile = new RandomAccessFile(f, "r");
+
+        byte[] dest = new byte[length];
+        randomAccessFile.read(dest, (int) offset, length);
+        return dest;
     }
 
     @Override
     public synchronized void write(Path file, long offset, byte[] data)
         throws FileNotFoundException, IOException
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (file == null || data == null) throw new NullPointerException("Argument is null");
+        File f = new File(rootString + file.toString());
+        if (!f.exists()) throw new FileNotFoundException("File does not exist");
+        if (f.isDirectory()) throw new FileNotFoundException("Try to write from a directory file");
+
+        if (offset < 0) throw new IndexOutOfBoundsException("offset is negative");
+
+        RandomAccessFile randomAccessFile = new RandomAccessFile(f, "rw");
+        randomAccessFile.seek(offset);
+        randomAccessFile.write(data);
+
     }
 
     // The following methods are documented in Command.java.

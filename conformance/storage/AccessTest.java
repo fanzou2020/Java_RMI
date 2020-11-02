@@ -515,4 +515,10 @@ public class AccessTest extends StorageTest
                                  "when given null for data argument", t);
         }
     }
+
+    public static void main(String[] args) throws TestFailed {
+        AccessTest at = new AccessTest();
+        at.initialize();
+        at.perform();
+    }
 }
