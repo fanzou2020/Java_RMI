@@ -85,4 +85,10 @@ public class RegistrationTest extends StorageTest
                                  "that contain no files");
         }
     }
+
+    public static void main(String[] args) throws TestFailed {
+        RegistrationTest test = new RegistrationTest();
+        test.initialize();
+        test.perform();
+    }
 }

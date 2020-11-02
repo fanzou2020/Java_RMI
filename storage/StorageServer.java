@@ -16,6 +16,17 @@ import naming.*;
  */
 public class StorageServer implements Storage, Command
 {
+    // Two skeletons
+    private Skeleton<Command> commandSkeleton;
+    private Skeleton<Storage> storageSkeleton;
+
+    // Root file and its Absolute path
+    private File root;
+    private String rootString;
+
+
+
+
     /** Creates a storage server, given a directory on the local filesystem.
 
         @param root Directory on the local filesystem. The contents of this
@@ -24,7 +35,14 @@ public class StorageServer implements Storage, Command
     */
     public StorageServer(File root)
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (root == null) throw new NullPointerException("Argument is null");
+
+        this.root = root;
+        this.rootString = root.getAbsolutePath();
+
+        commandSkeleton = new Skeleton<Command>(Command.class, this);
+        storageSkeleton = new Skeleton<Storage>(Storage.class, this);
+
     }
 
     /** Starts the storage server and registers it with the given naming
@@ -50,7 +68,47 @@ public class StorageServer implements Storage, Command
     public synchronized void start(String hostname, Registration naming_server)
         throws RMIException, UnknownHostException, FileNotFoundException
     {
-        throw new UnsupportedOperationException("not implemented");
+        commandSkeleton.start();
+        storageSkeleton.start();
+        // create stubs
+        Command commandStub = Stub.create(Command.class, commandSkeleton, hostname);
+        Storage storageStub = Stub.create(Storage.class, storageSkeleton, hostname);
+
+        // register this storage server to naming server, given Registration stub
+        Path[] filesToDelete = naming_server.register(storageStub, commandStub, Path.list(root));
+
+        // Remove Files in filesToDelete
+        for (Path file : filesToDelete) {
+            if (!delete(file)) throw new RMIException("File deletion failed");
+        }
+
+        // delete empty directories
+        if (isEmptyDir(root)) return;
+        deleteEmptyDirs(root);
+    }
+
+    private void deleteEmptyDirs(File cur) {
+        if (cur.isDirectory()) {
+            // if current directory is empty, delete it
+            if (isEmptyDir(cur)) cur.delete();
+
+            // else, recursively delete its children files
+            else {
+                for (File file : cur.listFiles())
+                    deleteEmptyDirs(file);
+
+                if (isEmptyDir(cur)) cur.delete();
+            }
+        }
+    }
+
+    private boolean isEmptyDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] list = dir.list();
+            return (list != null) && list.length == 0;
+        } else {
+            return false;
+        }
     }
 
     /** Stops the storage server.
@@ -103,6 +161,7 @@ public class StorageServer implements Storage, Command
     @Override
     public synchronized boolean delete(Path path)
     {
-        throw new UnsupportedOperationException("not implemented");
+        File file = new File(rootString + path.toString());
+        return file.delete();
     }
 }
