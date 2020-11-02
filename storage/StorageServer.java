@@ -68,6 +68,8 @@ public class StorageServer implements Storage, Command
     public synchronized void start(String hostname, Registration naming_server)
         throws RMIException, UnknownHostException, FileNotFoundException
     {
+        if (hostname == null || naming_server == null) throw new NullPointerException("Argument is null");
+
         commandSkeleton.start();
         storageSkeleton.start();
         // create stubs
@@ -82,11 +84,12 @@ public class StorageServer implements Storage, Command
             if (!delete(file)) throw new RMIException("File deletion failed");
         }
 
-        // delete empty directories
+        // prune empty directories, which means all its descendants do not contain any file
         if (isEmptyDir(root)) return;
         deleteEmptyDirs(root);
     }
 
+    // Helper function to recursively delete empty directories
     private void deleteEmptyDirs(File cur) {
         if (cur.isDirectory()) {
             // if current directory is empty, delete it
@@ -97,11 +100,13 @@ public class StorageServer implements Storage, Command
                 for (File file : cur.listFiles())
                     deleteEmptyDirs(file);
 
+                // after delete empty child directories, check whether it is empty again
                 if (isEmptyDir(cur)) cur.delete();
             }
         }
     }
 
+    // help function to check whether a directory is empty, that is this directory contains no sub-directory or files
     private boolean isEmptyDir(File dir) {
         if (dir.isDirectory()) {
             String[] list = dir.list();
