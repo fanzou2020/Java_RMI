@@ -175,7 +175,7 @@ public class Skeleton<T>
     public synchronized void start() throws RMIException
     {
         ServerSocket serverSocket;
-        if (thread != null && thread.isAlive() || started)
+        if ((thread != null && thread.isAlive()) || started)
             throw new RMIException("Listening thread already running.");
 
         try {

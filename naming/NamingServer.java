@@ -40,6 +40,8 @@ public class NamingServer implements Service, Registration
 
     private List<ServerStubs> registeredStubs;
 
+    private boolean started = false;
+
     /** Creates the naming server object.
 
         <p>
@@ -77,8 +79,12 @@ public class NamingServer implements Service, Registration
      */
     public synchronized void start() throws RMIException
     {
+        if (started) return;
+
         registrationSkeleton.start();
         serviceSkeleton.start();
+
+        started = true;
     }
 
     /** Stops the naming server.
@@ -92,8 +98,12 @@ public class NamingServer implements Service, Registration
      */
     public void stop()
     {
-        registrationSkeleton.stop();
-        serviceSkeleton.stop();
+        if (started) {
+            registrationSkeleton.stop();
+            serviceSkeleton.stop();
+
+            this.stopped(new Throwable("Stopped by calling stop()"));
+        }
     }
 
     /** Indicates that the server has completely shut down.
@@ -184,6 +194,7 @@ public class NamingServer implements Service, Registration
         return true;
     }
 
+    // TODO: delete in naming server
     @Override
     public boolean delete(Path path) throws FileNotFoundException
     {

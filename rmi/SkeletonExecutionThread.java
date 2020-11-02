@@ -20,10 +20,9 @@ public class SkeletonExecutionThread<T> extends Thread {
     public void run() {
         try {
             process();
-        } catch (Exception e) {
-            System.err.println("Process IOStream error");
-            e.printStackTrace();
         }
+        catch (IOException e) { }
+        catch (Exception e) { e.printStackTrace(); }
     }
 
     private void process() throws Exception {

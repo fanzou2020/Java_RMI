@@ -2,6 +2,8 @@ package storage;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import common.*;
 import rmi.*;
@@ -24,7 +26,7 @@ public class StorageServer implements Storage, Command
     private File root;
     private String rootString;
 
-
+    private boolean started = false;
 
 
     /** Creates a storage server, given a directory on the local filesystem.
@@ -68,6 +70,8 @@ public class StorageServer implements Storage, Command
     public synchronized void start(String hostname, Registration naming_server)
         throws RMIException, UnknownHostException, FileNotFoundException
     {
+        if (started) return;
+
         if (hostname == null || naming_server == null) throw new NullPointerException("Argument is null");
 
         commandSkeleton.start();
@@ -87,6 +91,8 @@ public class StorageServer implements Storage, Command
         // prune empty directories, which means all its descendants do not contain any file
         if (isEmptyDir(root)) return;
         deleteEmptyDirs(root);
+
+        started = true;
     }
 
     // Helper function to recursively delete empty directories
@@ -123,7 +129,12 @@ public class StorageServer implements Storage, Command
      */
     public void stop()
     {
-        throw new UnsupportedOperationException("not implemented");
+        if (started) {
+            commandSkeleton.stop();
+            storageSkeleton.stop();
+
+            this.stopped(new Throwable("Stop storage server by calling stop()"));
+        }
     }
 
     /** Called when the storage server has shut down.
@@ -140,8 +151,11 @@ public class StorageServer implements Storage, Command
     public synchronized long size(Path file) throws FileNotFoundException
     {
         if (file == null) throw new NullPointerException("Argument is null");
+
         File f = new File(rootString + file.toString());
+
         if (!f.exists()) throw new FileNotFoundException("File does not exist");
+
         if (f.isDirectory()) throw new FileNotFoundException("Try to get the size of a directory file");
 
         return f.length();
@@ -152,8 +166,11 @@ public class StorageServer implements Storage, Command
         throws FileNotFoundException, IOException
     {
         if (file == null) throw new NullPointerException("Argument is null");
+
         File f = new File(rootString + file.toString());
+
         if (!f.exists()) throw new FileNotFoundException("File does not exist");
+
         if (f.isDirectory()) throw new FileNotFoundException("Try to read from a directory file");
 
         if (offset < 0 || length < 0) throw new IndexOutOfBoundsException("Negative offset or length");
@@ -171,7 +188,9 @@ public class StorageServer implements Storage, Command
         throws FileNotFoundException, IOException
     {
         if (file == null || data == null) throw new NullPointerException("Argument is null");
+
         File f = new File(rootString + file.toString());
+
         if (!f.exists()) throw new FileNotFoundException("File does not exist");
         if (f.isDirectory()) throw new FileNotFoundException("Try to write from a directory file");
 
@@ -187,13 +206,63 @@ public class StorageServer implements Storage, Command
     @Override
     public synchronized boolean create(Path file)
     {
-        throw new UnsupportedOperationException("not implemented");
+        boolean result = false;
+        if (file == null) throw new NullPointerException("Argument is null");
+        if (file.isRoot()) return false;
+
+        File f = new File(rootString + file.toString());
+        if (f.exists()) return false;
+
+        // create the file, along with its parent directories
+        File cur = root;
+        List<String> components = new ArrayList<>();
+        file.forEach(components::add);
+
+        // Get the string components except the last one, create directory if not exist
+        try {
+            for (int i = 0; i < components.size() - 1; i++) {
+                File dirToCreate = new File(cur.getAbsolutePath() + "/" + components.get(i));
+                if (!dirToCreate.exists()) dirToCreate.mkdir();
+
+                cur = dirToCreate;
+            }
+
+            // Create file for the last component
+            File fileToCreate = new File(cur.getAbsolutePath() + "/" + file.last());
+            if (!fileToCreate.exists()) {
+                result = fileToCreate.createNewFile();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return result;
     }
 
     @Override
     public synchronized boolean delete(Path path)
     {
+        if (path == null) throw new NullPointerException("Argument is null");
+        if (path.isRoot()) return false;
+
         File file = new File(rootString + path.toString());
+        if (!file.exists()) return false;
+
+        // delete a directory
+        if (file.isDirectory()) return deleteDir(file);
+
+        // delete a file
         return file.delete();
+    }
+
+    // recursively delete non-empty directory
+    private boolean deleteDir(File dir) {
+        File[] allContents = dir.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDir(file);
+            }
+        }
+        return dir.delete();
     }
 }

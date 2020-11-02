@@ -277,4 +277,10 @@ public class DirectoryTest extends StorageTest
         if(deleted_directory.exists())
             throw new TestFailed("deleted directory still present in filesystem");
     }
+
+    public static void main(String[] args) throws TestFailed {
+        DirectoryTest dt = new DirectoryTest();
+        dt.initialize();
+        dt.perform();
+    }
 }
