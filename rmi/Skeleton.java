@@ -35,7 +35,6 @@ public class Skeleton<T>
     T server;
     InetSocketAddress address;
     SkeletonListeningThread<T> thread;
-    boolean started = false;
 
     /** Creates a <code>Skeleton</code> with no initial server address. The
         address will be determined by the system when <code>start</code> is
@@ -175,7 +174,7 @@ public class Skeleton<T>
     public synchronized void start() throws RMIException
     {
         ServerSocket serverSocket;
-        if ((thread != null && thread.isAlive()) || started)
+        if (thread != null && thread.isAlive())
             throw new RMIException("Listening thread already running.");
 
         try {
@@ -193,7 +192,6 @@ public class Skeleton<T>
             // create a listening thread
             thread = new SkeletonListeningThread<T>(server, serverSocket);
             thread.start();
-            started = true;
 
         } catch (IOException e) {
             throw new RMIException("I/O exception, unable to create listening socket", e);
@@ -212,10 +210,18 @@ public class Skeleton<T>
         restarted.
      */
     public synchronized void stop() {
-        if (thread.isAlive()) {
-            thread.stopListening();
+        if (thread == null || !thread.isAlive()) return;
+
+        thread.stopListening();
+
+        try {
+            thread.join();
+            stopped(null);
+        } catch (Exception e) {
+            stopped(e);
+            e.printStackTrace();
         }
-        started = false;
+
         System.out.println("Server stopped, port = " + address.getPort());
     }
 

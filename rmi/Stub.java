@@ -56,7 +56,7 @@ public abstract class Stub
 
         /* Ensures that a stub cannot be created from a skeleton whose address has
         not been determined. */
-        if (!skeleton.started || skeleton.address == null) {
+        if (skeleton.address == null) {
             throw new IllegalStateException("Server haven't started, or address undefined");
         }
 

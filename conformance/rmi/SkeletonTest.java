@@ -87,7 +87,6 @@ public class SkeletonTest extends Test
             throw new TestFailed("skeleton refuses connections after start");
 
         skeleton.stop();
-        stopped = true;
 
         synchronized(this)
         {
