@@ -356,9 +356,6 @@ public class SkeletonTest extends Test
 
     public static void main(String[] args) throws TestFailed {
         SkeletonTest test = new SkeletonTest();
-        test.ensureNullPointerExceptions(); // passed
-        test.ensureClassRejected();  // passed
-        test.ensureNonRemoteInterfaceRejected(); // passed
-        test.ensureSkeletonRuns();  // passed
+        test.perform();
     }
 }
